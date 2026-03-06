@@ -53,7 +53,7 @@ export function TakeTestPage() {
   const animationFrameRef = useRef<number | undefined>(undefined)
   const ranIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const detectionIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined)
-  const modeChangeIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined)
+  const modeChangeIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined) // used only for vibrational tasks, PUR uses simple sine
   const dotPositionRef = useRef<DotPosition>(dotPosition)
 
   // Camera and face detection states
@@ -69,8 +69,9 @@ export function TakeTestPage() {
   // Pursuit logic refs
   const lastFrameTimeRef = useRef<number>(0)
   const pursuitSpeedRef = useRef<number>(1.0)
-  const phaseRef = useRef<number>(0)
-  const pursuitModeRef = useRef<'horizontal' | 'circular' | 'figure8' | 'oval' | 'verticalInfinity'>('horizontal')
+  // random phases for smooth random directional motion
+  const phaseXRef = useRef<number>(Math.random() * 2 * Math.PI)
+  const phaseYRef = useRef<number>(Math.random() * 2 * Math.PI)
 
   // --- Backend Integration States ---
   const [testId, setTestId] = useState<number | null>(null)
@@ -228,7 +229,8 @@ export function TakeTestPage() {
 
   // Detection and Data Capture Loop
   useEffect(() => {
-    if (!activeCaptureSteps.includes(currentStep) || !cameraReady || !videoRef.current) return
+    // animation/data loop should run during capture steps even if camera isn't ready yet
+    if (!activeCaptureSteps.includes(currentStep)) return
 
     const canvas = canvasRef.current
     const displaySize = { width: 640, height: 480 }
@@ -335,11 +337,11 @@ export function TakeTestPage() {
       }
 
       if (selectedTest === 'PUR') {
-        modeChangeIntervalRef.current = setInterval(() => {
-          const modes: Array<'horizontal' | 'circular' | 'figure8' | 'oval' | 'verticalInfinity'> = ['horizontal', 'circular', 'figure8', 'oval', 'verticalInfinity']
-          const next = modes[(modes.indexOf(pursuitModeRef.current) + 1) % modes.length]
-          pursuitModeRef.current = next
-        }, 10000)
+        // set random phases for smooth random directional motion
+        phaseXRef.current = Math.random() * 2 * Math.PI
+        phaseYRef.current = Math.random() * 2 * Math.PI
+        // clear any previous mode-change timer just in case
+        if (modeChangeIntervalRef.current) clearInterval(modeChangeIntervalRef.current)
       }
 
       const animate = () => {
@@ -350,15 +352,27 @@ export function TakeTestPage() {
         const elapsed = (now - startTime) / 1000
 
         if (selectedTest === 'PUR') {
-          phaseRef.current += pursuitSpeedRef.current * delta
-          const p = phaseRef.current
-          const m = pursuitModeRef.current
-          const r = 35
-          if (m === 'horizontal') setDotPosition({ x: 50 + r * Math.sin(p), y: 50, size: 20, opacity: 1 })
-          else if (m === 'circular') setDotPosition({ x: 50 + r * Math.cos(p), y: 50 + r * Math.sin(p), size: 20, opacity: 1 })
-          else if (m === 'figure8') setDotPosition({ x: 50 + r * Math.sin(p), y: 50 + r * Math.sin(p) * Math.cos(p), size: 20, opacity: 1 })
-          else if (m === 'oval') setDotPosition({ x: 50 + r * Math.cos(p), y: 50 + (r / 2) * Math.sin(p), size: 20, opacity: 1 })
-          else if (m === 'verticalInfinity') setDotPosition({ x: 50 + r * Math.sin(p) * Math.cos(p), y: 50 + r * Math.sin(p), size: 20, opacity: 1 })
+          // smooth random directional motion using sine waves for velocity
+          const vx = 30 * Math.sin(elapsed * 0.5 + phaseXRef.current)
+          const vy = 30 * Math.sin(elapsed * 0.7 + phaseYRef.current)
+          let newX = dotPositionRef.current.x + vx * delta
+          let newY = dotPositionRef.current.y + vy * delta
+          // bounce off boundaries
+          if (newX < 0) {
+            newX = 0
+            phaseXRef.current = Math.PI - phaseXRef.current // reverse direction
+          } else if (newX > 100) {
+            newX = 100
+            phaseXRef.current = Math.PI - phaseXRef.current
+          }
+          if (newY < 0) {
+            newY = 0
+            phaseYRef.current = Math.PI - phaseYRef.current
+          } else if (newY > 100) {
+            newY = 100
+            phaseYRef.current = Math.PI - phaseYRef.current
+          }
+          setDotPosition({ x: newX, y: newY, size: 20, opacity: 1 })
         } else if (selectedTest === 'VRG') {
           const size = 95 + 155 * Math.sin(elapsed * 2)
           const op = 0.7 + 0.3 * Math.sin(elapsed * 2)
@@ -368,7 +382,7 @@ export function TakeTestPage() {
       }
 
       if (selectedTest !== 'RAN') animate()
-
+          // (PUR handled inside animate)
       return () => {
         clearInterval(interval)
         if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
