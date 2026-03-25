@@ -11,6 +11,7 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  RefreshCcw,
 } from 'lucide-react'
 
 export function TestHistoryPage() {
@@ -43,6 +44,13 @@ export function TestHistoryPage() {
 
     fetchHistory()
   }, [userId, navigate])
+
+  const handleRetest = (testType: string) => {
+    // Navigate to TakeTestPage with a hint or state if needed. 
+    // Usually starting a test requires hitting the 'Start Test' button on the landing step.
+    // We can pass the testType to TakeTestPage and it could potentially auto-start.
+    navigate('/take-test', { state: { autoStart: testType } })
+  }
 
   const getClassificationColor = (classification: string) => {
     switch (classification) {
@@ -194,6 +202,9 @@ export function TestHistoryPage() {
                         <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
                           Classification
                         </th>
+                        <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -220,6 +231,20 @@ export function TestHistoryPage() {
                             >
                               {test.classification}
                             </span>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            {test.classification === 'Pending' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleRetest(test.test_type)
+                                }}
+                                className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                title="Retest"
+                              >
+                                <RefreshCcw className="w-5 h-5" />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}

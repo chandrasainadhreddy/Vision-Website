@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Eye,
   LayoutDashboard,
@@ -55,6 +55,15 @@ export function TakeTestPage() {
   const navigate = useNavigate()
   const [selectedTest, setSelectedTest] = useState<TestType>(null)
   const [currentStep, setCurrentStep] = useState<TestStep>('selection')
+  const location = useLocation()
+
+  useEffect(() => {
+    if (location.state?.autoStart && currentStep === 'selection') {
+      const type = location.state.autoStart as TestType
+      startTest(type)
+    }
+  }, [location.state])
+
   const [countdown, setCountdown] = useState(120)
   const [progress, setProgress] = useState(0)
   const [dotPosition, setDotPosition] = useState<DotPosition>({
@@ -98,6 +107,7 @@ export function TakeTestPage() {
   // pauseAllowedRef: prevents false pause triggers during the warmup after blue-dot-sequence starts
   const pauseAllowedRef = useRef(false)
   const lostFaceFramesRef = useRef(0) // grace period frames before pausing test
+  const openFaceFramesRef = useRef(0) // consecutive frames of open eyes required to resume
 
   // Pursuit logic refs
   const lastFrameTimeRef = useRef<number>(0)
@@ -290,7 +300,10 @@ export function TakeTestPage() {
     const canvas = canvasRef.current
     const displaySize = { width: 640, height: 480 }
 
+    let isDetecting = false
     const detectFaces = async () => {
+      if (isDetecting) return
+      isDetecting = true
       try {
         // Always prefer the visible display video for detection — browsers throttle off-screen elements.
         // Fall back to hidden videoRef for steps that have no display video.
@@ -310,32 +323,69 @@ export function TakeTestPage() {
           .withFaceLandmarks()
 
         if (detections) {
-          lostFaceFramesRef.current = 0 // face found - reset grace period
-          
           const landmarks = detections.landmarks
           const leftEyePoints = landmarks.getLeftEye()
           const rightEyePoints = landmarks.getRightEye()
           const leftEye = leftEyePoints.reduce((acc, p) => ({ x: acc.x + p.x / 6, y: acc.y + p.y / 6 }), { x: 0, y: 0 })
           const rightEye = rightEyePoints.reduce((acc, p) => ({ x: acc.x + p.x / 6, y: acc.y + p.y / 6 }), { x: 0, y: 0 })
 
-          if (currentStep === 'blue-dot-sequence') {
-            sampleCountRef.current += 1
-            const sample = {
-              n: sampleCountRef.current,
-              x: dotPositionRef.current.x,
-              y: dotPositionRef.current.y,
-              lx: leftEye.x,
-              ly: leftEye.y,
-              rx: rightEye.x,
-              ry: rightEye.y
-            }
-            samplesRef.current.push(sample)
+          const leftEAR  = calculateEAR(leftEyePoints)
+          const rightEAR = calculateEAR(rightEyePoints)
+          const avgEAR   = (leftEAR + rightEAR) / 2
 
-            if (samplesRef.current.length >= 50) {
-              const batchToUpload = [...samplesRef.current]
-              samplesRef.current = [] 
-              uploadBatch(batchToUpload)
+          let isEyeClosed = false
+          if (earBaselineRef.current > 0) {
+            // Use 0.82 ratio and 0.22 minimum for robust 'closed eye' detection
+            const blinkThreshold = Math.max(earBaselineRef.current * 0.82, 0.22)
+            if (avgEAR < blinkThreshold) isEyeClosed = true
+          } else if (avgEAR < 0.22) {
+            isEyeClosed = true // Fallback if no baseline
+          }
+
+          if (currentStep === 'blue-dot-sequence') {
+            if (isEyeClosed) {
+              lostFaceFramesRef.current += 1
+              openFaceFramesRef.current = 0
+              if (!isPausedRef.current && pauseAllowedRef.current && lostFaceFramesRef.current > 0) {
+                isPausedRef.current = true
+                setShowPauseOverlay(true)
+              }
+            } else {
+              lostFaceFramesRef.current = 0
+              openFaceFramesRef.current += 1
+
+              if (isPausedRef.current) {
+                // Immediate resume upon eyes open
+                if (openFaceFramesRef.current > 0) {
+                  isPausedRef.current = false
+                  setShowPauseOverlay(false)
+                }
+              }
+
+              // Only record data when eyes are open and system is unpaused
+              if (!isPausedRef.current) {
+                sampleCountRef.current += 1
+                const sample = {
+                  n: sampleCountRef.current,
+                  x: dotPositionRef.current.x,
+                  y: dotPositionRef.current.y,
+                  lx: leftEye.x,
+                  ly: leftEye.y,
+                  rx: rightEye.x,
+                  ry: rightEye.y
+                }
+                samplesRef.current.push(sample)
+
+                if (samplesRef.current.length >= 50) {
+                  const batchToUpload = [...samplesRef.current]
+                  samplesRef.current = [] 
+                  uploadBatch(batchToUpload)
+                }
+              }
             }
+          } else {
+            lostFaceFramesRef.current = 0 // face found - reset grace period for other steps
+            openFaceFramesRef.current = 0
           }
 
           // ----- LIVENESS CHECK via dynamic blink detection -----
@@ -343,10 +393,6 @@ export function TakeTestPage() {
           // Phase 2: Detect blinks as EAR drop ≥ 28% below personal baseline
           // A photo/screen has constant EAR → no drop ever detected → liveness fails.
           if (currentStep === 'camera-permission' && !blinkVerifiedRef.current) {
-            const leftEAR  = calculateEAR(leftEyePoints)
-            const rightEAR = calculateEAR(rightEyePoints)
-            const avgEAR   = (leftEAR + rightEAR) / 2
-
             const CALIBRATION_SAMPLES = 15  // frames to measure open-eye EAR
             const BLINK_DROP_RATIO    = 0.72 // EAR must drop to 72% of baseline to count as closed
             const MAX_BLINK_FRAMES    = 20    // max frames of closure for a natural blink (increased for resilience)
@@ -389,24 +435,14 @@ export function TakeTestPage() {
               }
             }
           }
-
-          // Handle pause/resume in the test sequence
-          if (currentStep === 'blue-dot-sequence') {
-            if (isPausedRef.current) {
-              // Face returned — resume immediately
-              isPausedRef.current = false
-              setShowPauseOverlay(false)
-            }
-          }
         } else {
           // No face found in this frame
           lostFaceFramesRef.current += 1
+          openFaceFramesRef.current = 0
           
           if (currentStep === 'blue-dot-sequence') {
-            // Flicker protection: Increment lost frames counter
-            
-            // Only pause if face is missing for > 5 consecutive frames (approx 250ms)
-            if (!isPausedRef.current && pauseAllowedRef.current && lostFaceFramesRef.current > 5) {
+            // Immediate pause if face is missing
+            if (!isPausedRef.current && pauseAllowedRef.current && lostFaceFramesRef.current > 0) {
               isPausedRef.current = true
               setShowPauseOverlay(true)
             }
@@ -441,6 +477,8 @@ export function TakeTestPage() {
         }
       } catch (error) {
         console.error('Detection error:', error)
+      } finally {
+        isDetecting = false
       }
     }
 
