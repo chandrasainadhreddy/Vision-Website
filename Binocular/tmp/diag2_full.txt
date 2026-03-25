@@ -1,0 +1,21 @@
+﻿STEP 1 - DB CHECK
+  users: 3 rows
+  tests: 30 rows
+  eye_data: 8424 rows
+  results: 30 rows
+  user_id=34
+
+STEP 2 - FLASK ROOT
+200 {'message': 'Binocular Vision Backend Running'}
+
+STEP 3 - START TEST
+200 {'message': 'New test started', 'status': True, 'test_id': 182}
+
+STEP 4 - UPLOAD EYE DATA (test_id=182)
+200 {'inserted': 30, 'status': True}
+
+STEP 5 - RUN AI (test_id=182)
+200 {'accuracy': 86.79, 'anomaly_score': 0.05504135902396978, 'classification': 'Normal', 'percentage': 100.0, 'reaction': 99.45, 'stability': 100.0, 'status': True, 'test_id': 182, 'test_type': 'ran', 'tracking': 99.63}
+
+STEP 6 - GET RESULT (test_id=182)
+200 {'accuracy': 86.79, 'classification': 'Normal', 'percentage': 100.0, 'reaction': 99.45, 'score': 0.055, 'stability': 100.0, 'status': True, 'tracking': 99.63}

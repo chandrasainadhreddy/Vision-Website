@@ -1,0 +1,10 @@
+{
+  "accuracy": 86.79,
+  "classification": "Normal",
+  "percentage": 100.0,
+  "reaction": 99.45,
+  "score": 0.055,
+  "stability": 100.0,
+  "status": true,
+  "tracking": 99.63
+}
