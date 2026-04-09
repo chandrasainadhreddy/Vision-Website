@@ -46,7 +46,7 @@ export function LoginPage() {
       if (userId !== undefined) {
         try {
           const profileRes = await fetch(
-            `http://127.0.0.1:5000/profile?user_id=${encodeURIComponent(userId)}`
+            `http://180.235.121.253:8120/profile?user_id=${encodeURIComponent(userId)}`
           )
           const profileData = await profileRes.json()
           if (profileData.status && profileData.user) {

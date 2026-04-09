@@ -30,7 +30,7 @@ export function TestHistoryPage() {
 
     const fetchHistory = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:5000/history?user_id=${userId}`)
+        const res = await fetch(`http://180.235.121.253:8120/history?user_id=${userId}`)
         const data = await res.json()
         if (data.status) {
           setTestHistory(data.history)

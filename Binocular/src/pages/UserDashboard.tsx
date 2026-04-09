@@ -85,18 +85,18 @@ export function UserDashboard() {
         }
         
         // Fetch dashboard data (recent tests + latest test)
-        const dashResponse = await fetch(`http://127.0.0.1:5000/home_dashboard?user_id=${encodeURIComponent(userId)}`)
+        const dashResponse = await fetch(`http://180.235.121.253:8120/home_dashboard?user_id=${encodeURIComponent(userId)}`)
         const dashData = await dashResponse.json()
 
         // Fetch profile data so we can show the profile image in the header
-        const profileResponse = await fetch(`http://127.0.0.1:5000/profile?user_id=${encodeURIComponent(userId)}`)
+        const profileResponse = await fetch(`http://180.235.121.253:8120/profile?user_id=${encodeURIComponent(userId)}`)
         const profileData = await profileResponse.json()
         if (profileData.status === true && profileData.user) {
           setProfileImage(profileData.user.profile_image || null)
         }
         
         // Fetch full history to get accurate total count
-        const historyResponse = await fetch(`http://127.0.0.1:5000/history?user_id=${encodeURIComponent(userId)}`)
+        const historyResponse = await fetch(`http://180.235.121.253:8120/history?user_id=${encodeURIComponent(userId)}`)
         const historyData = await historyResponse.json()
         
         if (dashData.status === true || dashData.status === 'success') {
@@ -207,7 +207,7 @@ export function UserDashboard() {
             </div>
             {userData.profile_image ? (
               <img
-                src={userData.profile_image.startsWith('http') ? userData.profile_image : `http://127.0.0.1:5000/${userData.profile_image}`}
+                src={userData.profile_image.startsWith('http') ? userData.profile_image : `http://180.235.121.253:8120/${userData.profile_image}`}
                 alt="Profile"
                 className="w-10 h-10 rounded-full object-cover"
               />
@@ -387,7 +387,7 @@ export function UserDashboard() {
               <div className="bg-gradient-to-br from-indigo-50 to-teal-50 rounded-2xl p-6 text-center mb-6">
                 {userData.profile_image ? (
                   <img
-                    src={userData.profile_image.startsWith('http') ? userData.profile_image : `http://127.0.0.1:5000/${userData.profile_image}`}
+                    src={userData.profile_image.startsWith('http') ? userData.profile_image : `http://180.235.121.253:8120/${userData.profile_image}`}
                     alt="Profile"
                     className="w-20 h-20 rounded-full mx-auto mb-4 object-cover"
                   />

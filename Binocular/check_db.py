@@ -2,7 +2,7 @@ import pymysql
 
 def get_db_connection():
     return pymysql.connect(
-        host="127.0.0.1",
+        host="180.235.121.253.8120",
         user="root",
         password="",
         database="binoculardb",

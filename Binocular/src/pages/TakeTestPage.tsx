@@ -137,7 +137,7 @@ export function TakeTestPage() {
     }
 
     try {
-      const res = await fetch('http://127.0.0.1:5000/start_test', {
+      const res = await fetch('http://180.235.121.253:8120/start_test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -174,7 +174,7 @@ export function TakeTestPage() {
   const uploadBatch = async (items: any[], _isFinal = false) => {
     if (!testId || items.length === 0) return
     try {
-      await fetch('http://127.0.0.1:5000/upload_eye_data', {
+      await fetch('http://180.235.121.253:8120/upload_eye_data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ test_id: testId, samples: items }),
@@ -633,7 +633,7 @@ export function TakeTestPage() {
       }
       try {
         console.log('[AI] Starting analysis for test:', testId)
-        const res = await fetch('http://127.0.0.1:5000/run_ai', {
+        const res = await fetch('http://180.235.121.253:8120/run_ai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ test_id: testId })

@@ -129,7 +129,7 @@ export function SettingsPage() {
           formData.append('user_id', userData.id)
           formData.append('image', selectedFile)
 
-          const uploadResponse = await fetch('http://127.0.0.1:5000/api/user/upload-profile-image', {
+          const uploadResponse = await fetch('http://180.235.121.253:8120/api/user/upload-profile-image', {
             method: 'POST',
             body: formData,
           })
@@ -435,7 +435,7 @@ export function SettingsPage() {
                           />
                         ) : userData.profile_image ? (
                           <img
-                            src={`http://127.0.0.1:5000/${userData.profile_image}?v=${imageRefreshKey}`}
+                            src={`http://180.235.121.253:8120/${userData.profile_image}?v=${imageRefreshKey}`}
                             alt="Profile"
                             className="w-24 h-24 rounded-full object-cover"
                           />
@@ -564,7 +564,7 @@ export function SettingsPage() {
                                 {imagePreview ? (
                                   <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                                 ) : userData.profile_image ? (
-                                  <img src={`http://127.0.0.1:5000/${userData.profile_image}?v=${imageRefreshKey}`} alt="Profile" className="w-full h-full object-cover" />
+                                  <img src={`http://180.235.121.253:8120/${userData.profile_image}?v=${imageRefreshKey}`} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
                                   <span className="text-sm">{initials}</span>
                                 )}
@@ -649,7 +649,7 @@ export function SettingsPage() {
                               {userData.profile_image ? (
                                 <div className="flex items-center gap-3">
                                   <img
-                                    src={`http://127.0.0.1:5000/${userData.profile_image}?v=${imageRefreshKey}`}
+                                    src={`http://180.235.121.253:8120/${userData.profile_image}?v=${imageRefreshKey}`}
                                     alt="Profile"
                                     className="w-12 h-12 rounded-full object-cover"
                                   />

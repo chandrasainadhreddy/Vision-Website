@@ -115,7 +115,7 @@ export function RegisterPage() {
     if (!email) return
     setCheckingEmail(true)
     try {
-      const res = await fetch(`http://127.0.0.1:5000/check-email?email=${encodeURIComponent(email)}`)
+      const res = await fetch(`http://180.235.121.253:8120/check-email?email=${encodeURIComponent(email)}`)
       if (!res.ok) {
         // endpoint might not exist; don't block registration based on this
         setCheckingEmail(false)

@@ -91,7 +91,7 @@ export function ResultsPage() {
     const fetchResult = async () => {
       try {
         console.log(`[Results] Fetching for test_id: ${testId} (Attempt: ${retryRef.current + 1})`)
-        const res = await fetch(`http://127.0.0.1:5000/get_result?test_id=${testId}`)
+        const res = await fetch(`http://180.235.121.253:8120/get_result?test_id=${testId}`)
 
         if (!res.ok) throw new Error('Network response was not ok')
 
